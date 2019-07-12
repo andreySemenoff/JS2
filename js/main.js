@@ -1,23 +1,70 @@
+const API = `https://raw.githubusercontent.com/GeekBrainsTutorial/online-store-api/master/responses`;
+
+// let getRequest = (url, cb) => {
+//     let xhr = new XMLHttpRequest();
+//     // window.ActiveXObject -> xhr = new ActiveXObject()
+//     xhr.open('GET', url, true);
+//     xhr.onreadystatechange = () => {
+//         if(xhr.readyState === 4) {
+//             if(xhr.status !== 200) {
+//                 console.log('error');
+//             } else {
+//                 cb(xhr.responseText);
+//             }
+//         }
+//     };
+//     xhr.send();
+// };
+
+// на технологии Promise:
+
+// let getRequest =  url => {
+
+//     return new Promise((resolve, reject) => {
+
+//         let xhr = new XMLHttpRequest();
+//         xhr.open('GET', url, true);
+        
+//         xhr.onreadystatechange = () => {
+//             if(xhr.readyState === 4) {
+//                 if(xhr.status !== 200) {
+//                     reject(console.log('error'));
+//                 } else {
+//                     resolve(xhr.responseText);
+//                 }
+//             }
+//         };
+
+//         xhr.send();
+//     })
+// }
+    
+        
+
 class Products {
     constructor(container=`.products`){
         this.container = container;
         this.data = [];
         this.allProduct = [];
-        this.init();
+        this._getProducts()
+            .then(() => this._render());
     }
-    init(){
-        this._fetchProducts();
-        this._render();
-        this._summ()
+    calcSum(){
+        // let result = 0;
+        // for (let el of this.allProduct){
+        //     result += el.price;
+        // }
+        // // console.log(result);
+        // return result
+        return this.allProduct.reduce((accum, item) => accum + item.price, 0);
     }
-    _fetchProducts(){
-        this.data = [
-            {id: 1, title: 'Notebook', price: 2000},
-            {id: 2, title: 'Keyboard', price: 200},
-            {id: 3, title: 'Mouse', price: 47},
-            {id: 4, title: 'Gamepad', price: 87},
-            {id: 5, title: 'Chair', price: 187},
-        ];
+    _getProducts(){
+        return fetch(`${API}/catalogData.json`)
+            .then(result => result.json())
+            .then(data => {
+                this.data = [...data];
+            })
+            .catch(error => console.log(error));
     }
     _render(){
         const block = document.querySelector(this.container);
@@ -27,31 +74,20 @@ class Products {
             block.insertAdjacentHTML('beforeend', product.render())
         }
     }
-    _summ(){ // функция расчета суммы стоимости товаров в каталоге
-        let summPrice = 0;
-        for (let i = 0; i < this.data.length; i++) {
-            summPrice += this.data[i].price;
-        }
-        const blockSumDiv = `<div>
-                                <h2>Стоимость всех товаров = ${summPrice}</h2>
-                            </div>`
-        const blockSum = document.querySelector(this.container);
-        blockSum.insertAdjacentHTML('beforeend', blockSumDiv)
-    }
 }
 
 class ProductItem {
     constructor(el, img='https://placehold.it/200x150'){
-        this.title = el.title;
-        this.id = el.id;
+        this.product_name = el.product_name;
+        this.id_product = el.id_product;
         this.price = el.price;
         this.img = img;
     }
     render() {
             return `<div class="product-item">
-                 <img src="${this.img}" alt="${this.title}">
+                 <img src="${this.img}" alt="${this.product_name}">
                  <div class="desc">
-                     <h3>${this.title}</h3>
+                     <h3>${this.product_name}</h3>
                      <p>${this.price}</p>
                      <button class="buy-btn">Купить</button>
                  </div>
@@ -59,62 +95,8 @@ class ProductItem {
     }
 }
 
-/* class Cart {
-    constructor(container=`.myCart`){ 
-        this.container = container;
-        this.dataCart = []; //получаем массив данных с товарами корзины
-        this.allCart = []; //получаем всю корзину 
-        this.init(); // запускаем функции
-    }
-    init(){
-        this._fetchCart(); // получаем от сервера данные с перечнем товаров в корзине
-        this._renderCart(); //добавляем перечень полученных товаров на страницу
-        this._summProducts() // расчет стоимости товара с учетом количества
-        this._summCart() //расчет стоимость всей корзины
-        this._delProducts() //удаление товара из корзины
-        this._delCart() //удаление всех товаров корзины
-    }
-    _fetchCart(){
-        
-    }
-    _renderCart(){
-        
-    }
-    _summProducts(){ 
-
-    }
-    _summCart(){ 
-
-    }
-    _delProducts(){ 
-
-    }
-    _delCart(){ 
-
-    }
-} */
-
-/* class CartItem extends ProductItem { // класс продукт в корзине наследуем свойства от ProductItem + добавляем количество и кнопку удалить товар
-    constructor(el, img='https://placehold.it/100x50', quantity){ // уменьшил размер картинки
-        super(el, img);  // также как и в товарах
-        this.quantity = quantity // добавляется поле количество
-    }
-    render() { //создаем товар на странице
-        return `<div class="product-item">
-                <img src="${this.img}" alt="${this.title}">
-                <div class="desc">
-                    <h3>${this.title}</h3>
-                    <p>${this.price}</p>
-                    <input type="number" min="1" value="1">  //добавляем поле количество
-                    <button class="buy-btn">Удалить</button>  //меняем значение кнопки на удалить
-                </div>
-            </div>`
-    } 
-    delProd() { // удаляем товар при нажатии на кнопку удалить
-
-    }
-} */
 const products = new Products();
+console.log(products.calcSum());
 
 // const products = [
 //     {id: 1, title: 'Notebook', price: 2000},
@@ -143,3 +125,28 @@ const products = new Products();
 // };
 //
 // renderPage(products);
+
+class CartItem {
+    constructor(el, img='https://placehold.it/100x75'){
+        this.product_name = el.product_name;
+        this.id_product = el.id_product;
+        this.price = el.price;
+        this.img = img;
+    }
+    render() {
+            return `<div class="product-item">
+                 <img src="${this.img}" alt="${this.product_name}">
+                 <div class="desc">
+                     <h3>${this.product_name}</h3>
+                     <p>${this.price}</p>
+                     <button class="buy-btn">Купить</button>
+                 </div>
+             </div>`
+    }
+}
+
+window.onload = () => {
+    document.querySelector(`.buy-btn`).addEventListener('click', () => {
+        console.log ('проверка');
+    });
+}
